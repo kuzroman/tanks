@@ -52,9 +52,9 @@ export default {
             top: 0,
             left: 0,
 
+            users: [],
             hasLogin: '',
             status: defaultConnection,
-            users: [],
             scores: 0,
             adminMode: false,
             clickToAdminMode: defaultClick,
@@ -64,6 +64,22 @@ export default {
         isOffline() {
             return this.status === defaultConnection;
         },
+        user() {
+            if (!this.users.length) {
+                return {};
+            }
+            return this.users.find(i => i.name === this.name);
+        },
+    },
+    watch: {
+        user(user) {
+            if (user && user.command === 'restoreName') {
+                this.name = user.name || '';
+                this.score = user.score || 0;
+                this.top = user.top || 0;
+                this.left = user.left || 0;
+            }
+        }
     },
     methods: {
         rename() {
@@ -73,7 +89,9 @@ export default {
             this.name = '';
         },
         send(data) {
-            ws.send(JSON.stringify(Object.assign({name: this.name, score: this.score, top: this.top, left: this.left}, data)));
+            ws.send(JSON.stringify(Object.assign(
+                {name: this.name, score: this.score, top: this.top, left: this.left}, data)
+            ));
         },
         updateScore(num) {
             this.score++;
@@ -99,8 +117,7 @@ export default {
             }
             this.name = sessionName;
             this.hasLogin = true;
-            this.saveName(sessionName);
-            this.send({command: 'saveName'});
+            this.send({command: 'restoreName'});
         },
         findUserByName(name) {
             return this.users.find(i => i.name === name);
@@ -141,19 +158,15 @@ export default {
         document.body.addEventListener('click', this.adminModeActivator);
 
         document.onkeydown = (e) => {
-            switch (e.keyCode) {
-                case 37:
-                    this.left--;
-                    break;
-                case 38:
-                    this.top--;
-                    break;
-                case 39:
-                    this.left++;
-                    break;
-                case 40:
-                    this.top++;
-                    break;
+            let code = e.keyCode;
+            if(!this.hasLogin || code < 37 || code > 40) {
+                return;
+            }
+            switch (code) {
+                case 37:this.left--; break;
+                case 38:this.top--;  break;
+                case 39:this.left++; break;
+                case 40:this.top++;  break;
             }
             this.send({command: 'setPosition'});
         };

@@ -6,28 +6,30 @@ server.on('connection', ws => {
     ws.on('message', message => {
         server.clients.forEach(client => {
             if(client.readyState === WebSocket.OPEN) {
-                let data = JSON.parse(message);
-                let user = findUserByName(data.name);
-                if (data.command === 'removeUser') {
-                    removeUser(data.name);
-                } else if (user) {
-                    console.log('update', data);
-                    user.score = data.score;
-                    user.top = data.top;
-                    user.left = data.left;
-                    // user = data;
-                } else {
-                    users.push(data);
+                let model = JSON.parse(message);
+                let command = model.command;
+                // delete model.command;
+                let user = findUserByName(model.name);
+
+                if (command === 'removeUser') {
+                    removeUser(model.name);
+                } else if (command === 'setPosition' && model.name) {
+                    removeUser(model.name);
+                    users.push(model);
+                } else if (command === 'saveName' && !user) {
+                    users.push(model);
+                } else if (command === 'restoreName' && user) {
+                    user.command = command;
                 }
 
-                console.log('update', users);
+                console.log('users', command, users);
                 client.send(JSON.stringify(users));
             }
         })
     });
 
-    console.log('boom', users);
-    ws.send(JSON.stringify(users));
+    // console.log('boom', users);
+    // ws.send(JSON.stringify(users));
 });
 
 function findUserByName(name) {
